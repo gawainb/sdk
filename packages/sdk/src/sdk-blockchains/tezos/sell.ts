@@ -9,11 +9,13 @@ import { toBigNumber, toOrderId } from "@rarible/types"
 import { AssetType as TezosLibAssetType, Asset as TezosLibAsset } from "tezos-sdk-module/dist/common/base"
 import { PrepareSellRequest, PrepareSellResponse, SellRequest, SellRequestCurrency } from "../../order/sell/domain"
 import { Collection, ItemType, TezosOrder } from "./domain"
+import { TezosControllers } from "./controllers"
 
 
 export class Sell {
 	constructor(
-		private provider: Provider
+		private provider: Provider,
+		private controllers: TezosControllers
 	) {
 		this.sell = this.sell.bind(this)
 	}

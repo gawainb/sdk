@@ -8,9 +8,7 @@ import { fill_order } from "tezos-sdk-module/dist/order"
 import { AssetType as TezosLibAssetType, Asset as TezosLibAsset } from "tezos-sdk-module/dist/common/base"
 import { Address, BigNumber, Binary, toBigNumber, toOrderId, UnionAddress, Word } from "@rarible/types"
 import { BlockchainTezosTransaction } from "@rarible/sdk-transaction"
-import { OrderRaribleV2DataV1 } from "@rarible/protocol-api-client/build/models/OrderData"
-import { OrderPriceHistoryRecord } from "@rarible/protocol-api-client/build/models/OrderPriceHistoryRecord"
-import { OrderExchangeHistory } from "@rarible/protocol-api-client/build/models/OrderExchangeHistory"
+import { Order as TezosOrder } from "tezos-api-client"
 import {
 	FillRequest,
 	OriginFeeSupport,
@@ -19,38 +17,8 @@ import {
 	PrepareFillResponse,
 } from "../../order/fill/domain"
 import { GetNftOwnershipByIdResponse } from "./domain"
+import { TezosControllers } from "./controllers"
 
-export type SimpleTezosOrder = {
-	type: "RARIBLE_V2";
-	maker: Address;
-	taker?: Address;
-	makerEdpk: string,
-	make: {
-		assetType: TezosAsset,
-		value: string
-	},
-	take: {
-		assetType: TezosAsset,
-		value: string
-	},
-	fill: BigNumber;
-	start?: number;
-	end?: number;
-	makeStock: BigNumber;
-	cancelled: boolean;
-	salt: Word;
-	signature?: Binary;
-	createdAt: string;
-	lastUpdateAt: string;
-	pending?: Array<OrderExchangeHistory>;
-	hash: Word;
-	makeBalance?: BigNumber;
-	makePriceUsd?: BigNumber;
-	takePriceUsd?: BigNumber;
-	priceHistory?: Array<OrderPriceHistoryRecord>;
-	data: OrderRaribleV2DataV1;
-}
-export type TezosOrder = SimpleTezosOrder & { makerEdpk: string }
 export type TezosOrderXTZAssetType = {
 	assetClass: "XTZ"
 }
@@ -64,11 +32,12 @@ export type TezosOrderFA2AssetType = {
 	tokenId: BigNumber;
 }
 export type TezosAsset = TezosOrderXTZAssetType | TezosOrderFA12AssetType | TezosOrderFA2AssetType
-export type PreparedOrder = OrderForm & { makeStock: BigNumber }
+export type PreparedOrder = OrderForm & { makeStock: string }
 
 export class Fill {
 	constructor(
-		private provider: Provider
+		private provider: Provider,
+		private controllers: TezosControllers
 	) {
 		this.fill = this.fill.bind(this)
 	}
@@ -215,7 +184,7 @@ export class Fill {
 				payouts: this.convertOrderPayout(order.data.payouts),
 				origin_fees: this.convertOrderPayout(order.data.originFees),
 			},
-			makeStock: order.makeStock,
+			makeStock: toBigNumber(order.makeStock),
 		}
 	}
 
