@@ -14,6 +14,7 @@ import {
 } from "../../order/common"
 import { getFungibleTokenName, parseUnionItemId } from "./common/converters"
 import { api } from "./common/api"
+import { CurrencyType } from "../../common/domain"
 
 export class FlowSell {
 	constructor(private sdk: FlowSdk, private wallet: FlowWallet) {
@@ -104,10 +105,24 @@ export class FlowSell {
 
 		return {
 			supportedCurrencies: [
-				{ blockchain: "FLOW", type: "NATIVE" },
+				{ blockchain: "FLOW", type: "FT" },
 			],
 			baseFee: 0, //todo
 			submit: sellAction,
 		}
 	}
+}
+
+type Currency = string
+
+function getCurrencies(types: CurrencyType[]): Currency[] {
+	return types.flatMap(type => {
+		if (type.blockchain === "FLOW") {
+			return [
+				"FLOW",
+				"FLOW_USD",
+			]
+		}
+		return null as any
+	})
 }

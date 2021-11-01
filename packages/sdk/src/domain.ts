@@ -14,15 +14,17 @@ import { IBid, IBidUpdate } from "./order/bid/domain"
 import { IMintAndSell } from "./nft/mint-and-sell/domain"
 
 export interface IRaribleSdk {
-	apis: {
-		order: OrderControllerApi,
-		collection: CollectionControllerApi,
-		activity: ActivityControllerApi,
-		item: ItemControllerApi,
-		ownership: OwnershipControllerApi
-	}
+	apis: IApisSdk
 	nft: INftSdk,
 	order: IOrderSdk
+}
+
+export interface IApisSdk {
+	order: OrderControllerApi,
+	collection: CollectionControllerApi,
+	activity: ActivityControllerApi,
+	item: ItemControllerApi,
+	ownership: OwnershipControllerApi
 }
 
 export interface INftSdk {

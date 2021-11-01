@@ -19,7 +19,6 @@ import { IMintAndSell, MintAndSellRequest, MintAndSellResponse } from "./nft/min
 export function createRaribleSdk(wallet: BlockchainWallet, env: keyof typeof CONFIGS): IRaribleSdk {
 	const config = CONFIGS[env]
 	const configuration = new Configuration({ basePath: config.basePath })
-	const instance = getSDKBlockchainInstance(wallet, config)
 	const apis = {
 		collection: new CollectionControllerApi(configuration),
 		item: new ItemControllerApi(configuration),
@@ -27,6 +26,7 @@ export function createRaribleSdk(wallet: BlockchainWallet, env: keyof typeof CON
 		order: new OrderControllerApi(configuration),
 		activity: new ActivityControllerApi(configuration),
 	}
+	const instance = getSDKBlockchainInstance(wallet, config)
 	const sell = createSell(instance.order.sell, apis)
 	const mintAndSell = createMintAndSell(instance.nft.mint, instance.order.sell)
 	const nft = {

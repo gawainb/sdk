@@ -14,7 +14,7 @@ export type CurrencyType = {
 	type: CurrencySubType
 }
 
-export type CurrencySubType = "NATIVE" | "ERC20"
+export type CurrencySubType = "NATIVE" | "ERC20" | "FT"
 
 export interface AbstractPrepareResponse<Id, In, Out> {
 	submit: Action<Id, In, Out>
@@ -35,3 +35,5 @@ export type FlowItemId = AbstractItemId<"FLOW">
 export type EthereumItemId = AbstractItemId<"ETHEREUM">
 export type TezosItemId = AbstractItemId<"TEZOS">
 export type PolygonItemId = AbstractItemId<"POLYGON">
+
+export type Maybe<T> = T | undefined

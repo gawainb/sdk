@@ -2,13 +2,16 @@ import { EthereumWallet } from "@rarible/sdk-wallet"
 import { RaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toBigNumber } from "@rarible/types/build/big-number"
 import { toAddress, toWord } from "@rarible/types"
-import { ItemId } from "@rarible/api-client"
+import { CollectionControllerApi, ItemId, OrderId } from "@rarible/api-client"
+import { Action } from "@rarible/action"
+import { SellOrderStageId } from "@rarible/protocol-ethereum-sdk/build/order/sell"
 import {
 	OrderInternalRequest, OrderUpdateRequest,
 	PrepareOrderInternalRequest,
 	PrepareOrderInternalResponse,
 	PrepareOrderUpdateRequest, PrepareOrderUpdateResponse,
 } from "../../order/common"
+import { Maybe } from "../../common/domain"
 import {
 	convertOrderHashToOrderId,
 	convertUnionToEthereumAddress,
@@ -16,27 +19,49 @@ import {
 	getSupportedCurrencies,
 } from "./common"
 
+type SellConfig = {
+	collectionApi: CollectionControllerApi
+	wallet?: EthereumWallet,
+	sdk?: RaribleSdk
+}
+
 export class SellInternal {
-	constructor(private sdk: RaribleSdk, private wallet: EthereumWallet) {
+	private readonly collectionApi: CollectionControllerApi
+	private readonly sdk: Maybe<RaribleSdk>
+	private readonly wallet: Maybe<EthereumWallet>
+
+	constructor(config: SellConfig) {
+		this.collectionApi = config.collectionApi
+		this.wallet = config.wallet
+		this.sdk = config.sdk
 		this.sell = this.sell.bind(this)
 		this.update = this.update.bind(this)
 	}
 
 	async sell(request: PrepareOrderInternalRequest): Promise<PrepareOrderInternalResponse> {
-		const [domain, contract] = request.collectionId.split(":")
-		if (domain !== "ETHEREUM") {
-			throw new Error("Not an ethereum item")
-		}
-		const collection = await this.sdk.apis.nftCollection.getNftCollectionById({
-			collection: contract,
-		})
+		const collection = await this.collectionApi.getCollectionById({ collection: request.collectionId })
 
+		const response = {
+			multiple: collection.type === "ERC1155",
+			supportedCurrencies: getSupportedCurrencies(),
+			baseFee: await this.sdk.order.getBaseOrderFee(),
+		}
+
+		if (!this.sdk || !this.wallet) {
+			return {
+				...response,
+				submit: noSdkSellAction,
+			}
+		}
+
+		const sdk = this.sdk
+		const wallet = this.wallet
 		const sellAction = this.sdk.order.sell
 			.before(async (sellFormRequest: OrderInternalRequest) => {
 				const { itemId } = getEthereumItemId(sellFormRequest.itemId)
-				const item = await this.sdk.apis.nftItem.getNftItemById({ itemId })
+				const item = await sdk.apis.nftItem.getNftItemById({ itemId })
 				return {
-					maker: toAddress(await this.wallet.ethereum.getFrom()),
+					maker: toAddress(await wallet.ethereum.getFrom()), //TODO do we need maker here? Let's make it optional
 					makeAssetType: {
 						tokenId: toBigNumber(item.tokenId),
 						contract: toAddress(item.contract),
@@ -57,9 +82,7 @@ export class SellInternal {
 			.after(order => convertOrderHashToOrderId(order.hash))
 
 		return {
-			multiple: collection.type === "ERC1155",
-			supportedCurrencies: getSupportedCurrencies(),
-			baseFee: await this.sdk.order.getBaseOrderFee(),
+			...response,
 			submit: sellAction,
 		}
 	}
@@ -85,6 +108,7 @@ export class SellInternal {
 		return {
 			supportedCurrencies: getSupportedCurrencies(),
 			baseFee: await this.sdk.order.getBaseOrderFee(),
+			//TODO here we need to pass type of the order, let's make it required
 			submit: sellUpdateAction,
 		}
 	}
@@ -102,3 +126,7 @@ function getEthereumItemId(itemId: ItemId) {
 		domain,
 	}
 }
+
+const noSdkSellAction: Action<SellOrderStageId, OrderInternalRequest, OrderId> = Action.create({
+	id: "approve", run: () => Promise.reject("No SDK defined"),
+})
