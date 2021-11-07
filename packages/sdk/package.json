@@ -9,11 +9,10 @@
     "build"
   ],
   "scripts": {
-    "build": "run-s create-validators build-ts",
+    "build": "run-s build-ts",
     "build-babel": "babel --extensions \".ts,.tsx\" ./src --out-dir build && tsc --project tsconfig-build.json --emitDeclarationOnly && yarn run replace-mjs",
     "build-ts": "tsc --project tsconfig-build.json",
     "clean": "rimraf ./build",
-    "create-validators": "create-validator-ts src/**/*.type.ts",
     "replace-mjs": "find ./build -type f -name \"*.js\" -exec sed -i '' 's#./jsbi.mjs#jsbi#' {} \\;",
     "test": "jest --runInBand",
     "verify": "tsc --noEmit"
