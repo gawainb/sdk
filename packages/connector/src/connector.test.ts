@@ -1,6 +1,6 @@
 import type { Observable } from "rxjs"
 import { BehaviorSubject, of } from "rxjs"
-import { map } from "rxjs/operators"
+import { filter, first, map } from "rxjs/operators"
 import type { ConnectionProvider } from "./provider"
 import { ConnectorImpl } from "./connector"
 
@@ -31,6 +31,21 @@ describe("Connector", () => {
 		expect(() => connector.connect(opt2)).not.toThrow()
 		expect(() => connector.connect(opt2)).not.toThrow()
 	})
+
+	test("provider can be auto-connected", async () => {
+		const test1AutoConnected = {
+			...test1,
+			isAutoConnected: Promise.resolve(true),
+		}
+		const connector = new ConnectorImpl<string, string | number>([
+			test1AutoConnected, test2,
+		])
+		const connected = await connector.connection.pipe(
+			filter(it => it !== undefined),
+			first()
+		).toPromise()
+		expect(connected).toStrictEqual({ status: "connected", connection: "connected" })
+	})
 })
 
 const test1: ConnectionProvider<string, string> = {
@@ -38,6 +53,7 @@ const test1: ConnectionProvider<string, string> = {
 	connection: of({ status: "connected", connection: "connected" }),
 	connect() {
 	},
+	isAutoConnected: Promise.resolve(false),
 }
 
 const test2: ConnectionProvider<string, number> = {
@@ -45,6 +61,7 @@ const test2: ConnectionProvider<string, number> = {
 	connection: of({ status: "connected", connection: 1 }),
 	connect() {
 	},
+	isAutoConnected: Promise.resolve(false),
 }
 
 function createTestProvider(connection: Observable<string | undefined>): ConnectionProvider<string, string> {
@@ -53,5 +70,6 @@ function createTestProvider(connection: Observable<string | undefined>): Connect
 		connection: connection.pipe(map(it => it ? { status: "connected", connection: it } : undefined)),
 		connect() {
 		},
+		isAutoConnected: Promise.resolve(false),
 	}
 }

@@ -9,11 +9,18 @@ export type ProviderOption<Option, Connection> = {
 	option: Option
 }
 
-//todo how to support auto connect
-//todo Metamask for example, check if already connected, or other injected wallets - on mobile
 export type Connector<Option, Connection> = {
+	/**
+	 * Get all available connection options (Metamask, Fortmatic, Blocto, Temple etc)
+	 */
 	options: Promise<ProviderOption<Option, Connection>[]>
+	/**
+	 * Connect using specific option
+	 */
 	connect(option: ProviderOption<Option, Connection>): void
+	/**
+	 * Subscribe to this observable to get current connection state
+	 */
 	connection: Observable<ConnectionState<Connection>>
 }
 
@@ -34,6 +41,18 @@ export class ConnectorImpl<Option, Connection> implements Connector<Option, Conn
 			}
 		})
 		this.close = sub.unsubscribe
+		this.checkAutoConnect().then()
+	}
+
+	private async checkAutoConnect() {
+		const promises = this.providers.map(it => ({ provider: it, autoConnected: it.isAutoConnected }))
+		for (const { provider, autoConnected } of promises) {
+			const value = await autoConnected
+			if (value) {
+				this.provider.set(provider)
+				return
+			}
+		}
 	}
 
 	get options(): Promise<ProviderOption<Option, Connection>[]> {
