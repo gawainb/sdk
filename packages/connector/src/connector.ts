@@ -44,6 +44,16 @@ export class ConnectorImpl<Option, Connection> implements Connector<Option, Conn
 		this.checkAutoConnect().then()
 	}
 
+	add<NewOption, NewConnection>(provider: ConnectionProvider<Option | NewOption, Connection | NewConnection>) {
+		return new ConnectorImpl([...this.providers, provider])
+	}
+
+	static create<Option, Connection>(
+		provider: ConnectionProvider<Option, Connection>,
+	): ConnectorImpl<Option, Connection> {
+		return new ConnectorImpl([provider])
+	}
+
 	private async checkAutoConnect() {
 		const promises = this.providers.map(it => ({ provider: it, autoConnected: it.isAutoConnected }))
 		for (const { provider, autoConnected } of promises) {

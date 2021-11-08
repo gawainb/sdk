@@ -6,9 +6,7 @@ import { ConnectorImpl } from "./connector"
 
 describe("Connector", () => {
 	test("should return options", async () => {
-		const connector = new ConnectorImpl<string, string | number>([
-			test1, test2,
-		])
+		const connector = ConnectorImpl.create(test1).add(test2)
 		expect(await connector.options).toStrictEqual([
 			{ provider: test1, option: "test1-op1" },
 			{ provider: test1, option: "test1-op2" },
@@ -22,7 +20,7 @@ describe("Connector", () => {
 		const conn2 = new BehaviorSubject<string | undefined>(undefined)
 		const p2 = createTestProvider(conn2)
 
-		const connector = new ConnectorImpl([p1, p2])
+		const connector = ConnectorImpl.create(p1).add(p2)
 		const [opt1, opt2] = await connector.options
 		connector.connect(opt1)
 		expect(() => connector.connect(opt2)).toThrow()
@@ -37,9 +35,7 @@ describe("Connector", () => {
 			...test1,
 			isAutoConnected: Promise.resolve(true),
 		}
-		const connector = new ConnectorImpl<string, string | number>([
-			test1AutoConnected, test2,
-		])
+		const connector = ConnectorImpl.create(test1AutoConnected).add(test2)
 		const connected = await connector.connection.pipe(
 			filter(it => it !== undefined),
 			first()
@@ -48,7 +44,7 @@ describe("Connector", () => {
 	})
 })
 
-const test1: ConnectionProvider<string, string> = {
+const test1: ConnectionProvider<"test1-op1" | "test1-op2", string> = {
 	options: Promise.resolve(["test1-op1", "test1-op2"]),
 	connection: of({ status: "connected", connection: "connected" }),
 	connect() {
@@ -56,7 +52,7 @@ const test1: ConnectionProvider<string, string> = {
 	isAutoConnected: Promise.resolve(false),
 }
 
-const test2: ConnectionProvider<string, number> = {
+const test2: ConnectionProvider<"test2-op1", number> = {
 	options: Promise.resolve(["test2-op1"]),
 	connection: of({ status: "connected", connection: 1 }),
 	connect() {
@@ -64,7 +60,7 @@ const test2: ConnectionProvider<string, number> = {
 	isAutoConnected: Promise.resolve(false),
 }
 
-function createTestProvider(connection: Observable<string | undefined>): ConnectionProvider<string, string> {
+function createTestProvider(connection: Observable<string | undefined>): ConnectionProvider<"option", string> {
 	return {
 		options: Promise.resolve(["option"]),
 		connection: connection.pipe(map(it => it ? { status: "connected", connection: it } : undefined)),
